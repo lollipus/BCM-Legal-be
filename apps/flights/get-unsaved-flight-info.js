@@ -383,6 +383,7 @@ async function searchUnsavedFlights(flightsInfo) {
     let driver = await new Builder()
         .forBrowser(Browser.CHROME)
         .setChromeOptions(options.addArguments('--headless=new'))
+        .setChromeOptions(options.addArguments('--disable=new'))
         .setChromeOptions(options.setPageLoadStrategy('eager'))
         .build();
 
