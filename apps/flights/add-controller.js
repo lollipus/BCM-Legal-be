@@ -1,7 +1,7 @@
 const { Airport, Airline, Flight } = require('../../DB/flights-db/models');
 
 
-const { moment } = require('moment-timezone');
+const moment = require('moment-timezone');
 
 // WORK AIRLINE FUNCTION
 // i use this function to work with the airlines
@@ -112,6 +112,8 @@ const convertTimeFromATimezoneToOurTimezone = (date, timezone) => {
     const targetTimezone = 'Europe/Rome';
 
     // Converti la data dal fuso orario di partenza a quello di destinazione
+
+
     const convertedDate = moment.tz(localDateString, sourceTimezone).tz(targetTimezone);
 
     // console.log(date, convertedDate.format().split('+')[0] + '.000', timezone, 'date, convertedDate, timezone');
@@ -376,35 +378,33 @@ const formattedFlightFunction = async (flight, airportsList, airlinesList) => {
 
 const addSingleFlight = async (flight) => {
 
-    try {
 
 
-        console.log(flight, 'flight');
+    console.log(flight, 'flight');
 
 
-        const airportsList = await Airport.find();
+    const airportsList = await Airport.find();
 
-        const airlinesList = await Airline.find();
+    const airlinesList = await Airline.find();
 
-        const formattedFlight = await formattedFlightFunction(flight, airportsList, airlinesList);
+    const formattedFlight = await formattedFlightFunction(flight, airportsList, airlinesList);
 
-        const flightToAdd = new Flight(formattedFlight);
 
-        await flightToAdd.save();
+    let flightResult = await Flight.findOne({
+        slug: formattedFlight.slug
+    }).populate('depAirport')
+        .populate('arrAirport')
+        .populate('carrierAirline')
+        .populate('codesharesAirlines')
 
-        res.status(200).json({
-            status: 'success',
-            message: 'Flight added successfully',
-            flights: flightToAdd
-        })
-
-    } catch (error) {
-        console.log(error);
-        res.status(500).json({
-            status: 'error',
-            message: 'Internal server error'
-        })
+    if (!flightResult) {
+        flightResult = new Flight(formattedFlight);
+        await flightResult.save();
     }
+
+    console.log(flightResult, 'flightResult');
+
+    return flightResult;
 }
 
 
