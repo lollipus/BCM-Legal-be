@@ -1,6 +1,8 @@
 const { Airport, Airline, Flight } = require('../../DB/flights-db/models');
 
 
+const { moment } = require('moment-timezone');
+
 // WORK AIRLINE FUNCTION
 // i use this function to work with the airlines
 // i check if the airline is already in the database
