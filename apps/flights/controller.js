@@ -247,7 +247,7 @@ const getFlights = async (req, res) => {
 
 
 
-    if (deltaTime < 1000 * 60 * 60 * 24 * 2 || departureDate > today) {
+    if (deltaTime < 1000 * 60 * 60 * 24 * 3 || departureDate > today) {
 
         console.log('searching in unsaved flights');
 
