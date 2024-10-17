@@ -467,6 +467,10 @@ async function searchUnsavedFlights(flightsInfo) {
         flightResult[key] = flightObj[key];
     }
 
+    if (flightResult.flightId === undefined) {
+        return null
+    }
+
 
 
     //console.log(source);

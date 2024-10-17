@@ -261,7 +261,12 @@ const getFlights = async (req, res) => {
             }
         )
 
-        flights = [flights];
+        if (flights === null) {
+            flights = [];
+        } else {
+            flights = [flights];
+        }
+
 
         console.log(flights, 'flight from UNSAVED flights resarch');
 
@@ -323,11 +328,11 @@ const getFlights = async (req, res) => {
 
 
 
-    if (!flights) {
-        return res.status(404).json({
-            message: "Flight not found"
-        })
-    }
+    // if (!flights) {
+    //     return res.status(404).json({
+    //         message: "Flight not found"
+    //     })
+    // }
 
 
     if (flights.length === 1 && diagnosticBool) {
