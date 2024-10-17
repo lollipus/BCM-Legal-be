@@ -181,7 +181,7 @@ const determinateActualTime = (originalDate, delayMinutes, actualHourGiven, time
 // i get the flight slug
 // if the departure actual date and the arrival actual date are available
 // i determinate the actual time of both departure and arrival date
-const formattedFlight = async (flight, airportsList, airlinesList) => {
+const formattedFlightFunction = async (flight, airportsList, airlinesList) => {
 
     let departureAirport;
 
@@ -384,7 +384,7 @@ const addSingleFlight = async (flight) => {
 
         const airlinesList = await Airline.find();
 
-        const formattedFlight = await formattedFlight(flight, airportsList, airlinesList);
+        const formattedFlight = await formattedFlightFunction(flight, airportsList, airlinesList);
 
         const flightToAdd = new Flight(formattedFlight);
 
