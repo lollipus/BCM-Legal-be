@@ -114,6 +114,9 @@ const convertTimeFromATimezoneToOurTimezone = (date, timezone) => {
 
     const result = convertedDate.format().split('+')[0]
 
+    console.log(localDateString, sourceTimezone, targetTimezone, result, 'localDateString, sourceTimezone, targetTimezone, result');
+
+
     return result;
 
 }
