@@ -1,15 +1,16 @@
-const { By, Browser, until, Builder } = require('selenium-webdriver');
-const { Options } = require("selenium-webdriver/chrome.js");
-
-const { Flight, Airport, Airline } = require('../../DB/flights-db/models');
-
-const moment = require('moment-timezone');
+const { Airport, Airline, Flight } = require('../../DB/flights-db/models');
 
 
-
-const axios = require('axios');
-const addSingleFlight = require('./add-controller');
-
+// WORK AIRLINE FUNCTION
+// i use this function to work with the airlines
+// i check if the airline is already in the database
+// if it is i return the id of the airline
+// if it is not i create a new airline and i return the id of the new airline
+// i create new airline with the airline code and the airline name
+// if the airline code is 2 characters i set it as iata
+// if the airline code is 3 characters i set it as icao
+// i always set the fs code
+// i save the new airline 
 const workAirline = async (airlineCode, airlineName, airlinesList) => {
     // console.log(airlinesList.length, 'airlinesList length');
     let airlineObj;
@@ -115,9 +116,6 @@ const convertTimeFromATimezoneToOurTimezone = (date, timezone) => {
 
     const result = convertedDate.format().split('+')[0]
 
-    console.log(localDateString, sourceTimezone, targetTimezone, result, 'localDateString, sourceTimezone, targetTimezone, result');
-
-
     return result;
 
 }
@@ -171,6 +169,18 @@ const determinateActualTime = (originalDate, delayMinutes, actualHourGiven, time
 }
 
 
+// FORMATTED FLIGHT FUNCTION 
+// i use this function to format the flight
+// i get the flight, the airports list and the airlines list
+// i get the departure airport, the arrival airport
+// if the flight is diverted i get the diverted airport
+// the carrier airline
+// if codeshares are available i get
+// the codeshares airlines
+// i get the carrier flight number, the codeshares flight numbers
+// i get the flight slug
+// if the departure actual date and the arrival actual date are available
+// i determinate the actual time of both departure and arrival date
 const formattedFlight = async (flight, airportsList, airlinesList) => {
 
     let departureAirport;
@@ -355,24 +365,6 @@ const formattedFlight = async (flight, airportsList, airlinesList) => {
     //     console.log(flightObj, 'flightObj');
     // }
 
-    flightObj.carrierAirline = await Airline.findById(flightObj.carrierAirline)
-
-    flightObj.depAirport = await Airport.findById(flightObj.depAirport)
-
-    flightObj.arrAirport = await Airport.findById(flightObj.arrAirport)
-
-    if (flightObj.divAirport) {
-        flightObj.divAirport = await Airport.findById(flightObj.divAirport)
-    }
-
-    if (codesharesAirlines.length > 0) {
-        for (let c of flightObj.codesharesAirlines) {
-            const index = flightObj.codesharesAirlines.indexOf(c)
-            flightObj.codesharesAirlines[index] = await Airline.findById(c)
-        }
-    }
-
-
 
     return flightObj
 
@@ -380,112 +372,38 @@ const formattedFlight = async (flight, airportsList, airlinesList) => {
 }
 
 
-async function searchUnsavedFlights(flightsInfo) {
+const addSingleFlight = async (flight) => {
 
-    const options = new Options();
-
-    let driver = await new Builder()
-        .forBrowser(Browser.CHROME)
-        .setChromeOptions(options.addArguments('--headless=new'))
-        .setChromeOptions(options.addArguments('--disable=new'))
-        .setChromeOptions(options.setPageLoadStrategy('eager'))
-        .build();
+    try {
 
 
-
-    const { depDate, depAir, flightNumber, airlineCode } = flightsInfo;
-
+        console.log(flight, 'flight');
 
 
-    let month = depDate.split('-')[1];
-    if (month[0] === '0') {
-        month = month[1];
+        const airportsList = await Airport.find();
+
+        const airlinesList = await Airline.find();
+
+        const formattedFlight = await formattedFlight(flight, airportsList, airlinesList);
+
+        const flightToAdd = new Flight(formattedFlight);
+
+        await flightToAdd.save();
+
+        res.status(200).json({
+            status: 'success',
+            message: 'Flight added successfully',
+            flights: flightToAdd
+        })
+
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({
+            status: 'error',
+            message: 'Internal server error'
+        })
     }
-    let day = depDate.split('-')[2];
-    if (day[0] === '0') {
-        day = day[1];
-    }
-    const year = depDate.split('-')[0];
-
-
-
-    const requestFlightUrl = `https://www.flightstats.com/v2/flight-tracker/${airlineCode}/${flightNumber}?year=${year}&month=${month}&date=${day}`
-
-    // const requestFlightUrl = 'https://www.flightstats.com/v2/flight-tracker/FR/3720?year=2024&month=9&date=15'
-
-    console.log(requestFlightUrl, 'REQUEST FLIGHT URL');
-
-
-
-    await driver.get(requestFlightUrl);
-
-    let revealed = await driver.findElement(By.css("body"));
-    await driver.wait(until.elementIsVisible(revealed), 6000);
-
-    const source = await driver.getPageSource();
-    let wantSource;
-    if (source.includes('__NEXT_DATA__')) {
-        console.log('NEXT DATA FOUND');
-        wantSource = source.split('__NEXT_DATA__')[1].split('\n')[0];
-        //console.log(wantSource, 'NEXT DATA');
-    } else if (source.includes('window.__data={"App')) {
-        console.log('WINDOW DATA FOUND');
-        wantSource = source.split('window.__data={"App')[1];
-        console.log(wantSource);
-    }
-
-    wantSource = wantSource.split(';__NEXT');
-
-
-
-    //console.log(wantSource[0].split(' = ')[1], 'WANT SOURCE');
-
-
-    let flightObj = JSON.parse(wantSource[0].split(' = ')[1]);
-
-    flightObj = flightObj.props.initialState.flightTracker.flight;
-
-    // console.log(flightObj, 'FLIGHT OBJ');
-
-    // console.log(flightObj.positional, 'FLIGHT flightNote');
-
-    const wantedFlightKeys = [
-        "flightId",
-        "status",
-        "ticketHeader",
-        "operatedBy",
-        "departureAirport",
-        "arrivalAirport",
-        "divertedAirport",
-        "codeshares"
-    ]
-
-    const flightResult = {};
-
-    for (let key of wantedFlightKeys) {
-
-        flightResult[key] = flightObj[key];
-    }
-
-
-
-    //console.log(source);
-
-
-
-
-    await driver.manage().deleteAllCookies();
-    await driver.close();
-    await driver.quit();
-
-    const addedFlight = await addSingleFlight(flightResult);
-
-    console.log(addedFlight, 'flightFormetted');
-
-    return addedFlight;
 }
 
 
-
-
-module.exports = { searchUnsavedFlights };
+module.exports = addSingleFlight

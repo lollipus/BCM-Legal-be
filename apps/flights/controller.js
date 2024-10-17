@@ -306,7 +306,7 @@ const getFlights = async (req, res) => {
 
 
 
-    console.log(flights, 'flights');
+    console.log(flights, 'flights FROM FLIGHTS/CONTROLLER LINE 309');
 
 
 
