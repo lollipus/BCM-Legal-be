@@ -1,4 +1,5 @@
 const { Flight, Airport, Airline } = require('../../DB/flights-db/models');
+const { searchUnsavedFlights } = require('./get-unsaved-flight-info');
 
 
 
@@ -222,80 +223,90 @@ const getFlights = async (req, res) => {
 
     endInterval = endInterval.toISOString().split('.000Z')[0]
 
-    console.log(endInterval, 'endInterval');
+
+    const today = new Date(new Date().toISOString().split('T')[0]).getTime();
+
+    const departureDate = new Date(date).getTime();
+
+    // depature date is between the date and the date + 2 day
+
+    console.log(today, 'today');
+
+
+    const deltaTime = today - departureDate;
+
+    let flights;
+
+    console.log(deltaTime, 'deltaTime');
+
+    console.log(departureDate, 'departureDate');
+
+    console.log(departureDate > today, 'departureDate > today');
+
+    console.log(deltaTime > 1000 * 60 * 60 * 24 * 2, 'deltaTime > 1000 * 60 * 60 * 24 * 2');
 
 
 
-    // console.log(datePlusOneDay, 'datePlusOneDay');
+    if (deltaTime < 1000 * 60 * 60 * 24 * 2 || departureDate > today) {
 
-    // console.log(departureAirport._id, 'departureAirport._id');
+        console.log('searching in unsaved flights');
 
-    console.log(datePlusOneDay, 'datePlusOneDay');
 
-    console.log({
-        'depAirport': departureAirport._id,
-        // 'depDate': {
-        //     $gte: startInterval,  //new Date(startInterval),
-        //     $lt: endInterval //new Date(endInterval)
-        // },
-        $or: [
+        flights = await searchUnsavedFlights(
             {
-                'carrierAirline': airline._id,
-                'carrierFlightNumber': flightnum
-            },
-            {
-                $and: [
-                    {
-                        'codesharesAirlines': {
-                            $in: [airline._id]
-                        },
-                        'codesharesNumbers': {
-                            $in: [flightnum]
-                        }
-                    }
-
-
-                ]
+                depDate: date,
+                depAir: depairp,
+                flightNumber: flightnum,
+                airlineCode: airlinecode
             }
-        ]
-    });
+        )
+
+        flights = [flights];
+
+        console.log(flights, 'flight from UNSAVED flights resarch');
 
 
-    let flights = Flight.find({
-        'depAirport': departureAirport._id,
-        'depDate': {
-            $gte: startInterval,
-            $lt: endInterval
-        },
-        $or: [
-            {
-                'carrierAirline': airline._id,
-                'carrierFlightNumber': flightnum
+    } else {
+
+        flights = Flight.find({
+            'depAirport': departureAirport._id,
+            'depDate': {
+                $gte: startInterval,
+                $lt: endInterval
             },
-            {
-                $and: [
-                    {
-                        'codesharesAirlines': {
-                            $in: [airline._id]
-                        },
-                        'codesharesNumbers': {
-                            $in: [flightnum]
+            $or: [
+                {
+                    'carrierAirline': airline._id,
+                    'carrierFlightNumber': flightnum
+                },
+                {
+                    $and: [
+                        {
+                            'codesharesAirlines': {
+                                $in: [airline._id]
+                            },
+                            'codesharesNumbers': {
+                                $in: [flightnum]
+                            }
                         }
-                    }
-                ]
-            }
-        ]
-    }).populate('depAirport')
-        .populate('arrAirport')
-        .populate('carrierAirline')
-        .populate('codesharesAirlines')
+                    ]
+                }
+            ]
+        }).populate('depAirport')
+            .populate('arrAirport')
+            .populate('carrierAirline')
+            .populate('codesharesAirlines')
+
+        flights = await flights;
+    }
+
+
 
     // query.select("-codesharesAirlines -codesharesNumbers")
 
 
-    flights = await flights;
-    console.log(flights.slice(0, 30), 'flights');
 
+    console.log(flights, 'flights');
 
 
 
